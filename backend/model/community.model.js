@@ -48,3 +48,6 @@ const CommunitySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+const Community = mongoose.Schema("Community",CommunitySchema)
+export default Community

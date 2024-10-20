@@ -110,7 +110,7 @@ export const updateProfile = async (req, res) => {
         delete ret.password
         return ret
       }
-    }));
+    }))
   } catch (error) {
     console.log(`error in update user controller ${error}`);
     res.status(400).json({ message: "Internal server error" });
