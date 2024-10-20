@@ -2,8 +2,8 @@
 
 import Post from "../model/post.model.js";
 import User from "../model/user.model.js";
-import User from "../model/user.model.js";
-
+import Comment from "../model/comments.model.js";
+import mongoose from "mongoose";
 export const getPost = async (req, res) => {
   try {
     const { username } = req.params;
@@ -11,24 +11,25 @@ export const getPost = async (req, res) => {
     if (!user) return res.status(404).json({ message: "Error 404 not found" });
 
     const posts = await Post.find({ user: user._id })
-      .sort({ createdAt: -1 })
-      .populate({
-        path: "user",
-        select: "-password",
-      })
-      .populate({
-        path: "comments",
-        populate: {
-          path: "user",
-          select: "-password",
-        },
-      });
+            .sort({ createdAt: -1 })
+            .populate({
+                path: "user", // Populate the user who created the post
+                select: "-password -email",
+            })
+            .populate({
+                path: "comments", // Populate the comments
+                populate: {
+                    path: "user", // Populate the user for each comment
+                    select: "-password -email",
+                },
+            });
 
-    if (!posts) return res.status(404).json({ message: "Nothing here..." });
+
+    if (posts.length===0) return res.status(404).json({ message: "Nothing here..." });
 
     return res.status(200).json(posts);
   } catch (error) {
-    console.log(`Error in getPost controller ${error}`);
+    console.log(`Error in getPost controller ${error.message}`);
     res.status(400).json({ message: "Internal server error" });
   }
 };
@@ -80,16 +81,16 @@ export const createComment = async (req, res) => {
       user: userId,
     });
 
-    await newComment.save();
-
-    post.comments.push(newComment._id);
+    await newComment.save();    
+    
+    await post.comments.push(newComment._id);
     await post.save();
 
     await post.populate({
       path: "comments",
       populate: {
         path: "user",
-        select: "-password -likedPost -email -createdAt -updatedAt -community",
+        select: "-password  -email ",
       },
     });
 
@@ -114,12 +115,16 @@ export const likePosts = async (req, res) => {
     const checkIfAlreadyLiked = post.likes.includes(userId);
 
     if (checkIfAlreadyLiked) {
-      post.likes.splice(post.likes.indexOf(userId), 1);
-      user.likedPost.splice(user.likedPost.indexOf(postid), 1);
+       post.likes.splice(post.likes.indexOf(userId), 1);
+       user.likedPost.splice(user.likedPost.indexOf(postid), 1);
+       await post.save()
+       await user.save()
       return res.status(200).json({ message: "Post unliked successfully" });
     } else {
-      post.likes.push(userId);
-      user.likedPost.push(postid);
+       post.likes.push(userId);
+       user.likedPost.push(postid);
+       await post.save()
+       await user.save()
       return res.status(200).json({ message: "post liked successfully" });
     }
   } catch (error) {
@@ -145,13 +150,16 @@ export const likeComments = async (req, res) => {
 
     const hasLiked = comment.likes.includes(userId);
 
-    hasLiked
-      ? comment.likes.splice(comment.likes.indexOf(userId), 1)
-      : comment.likes.push(userId);
+    if(hasLiked){
+        comment.likes.splice(comment.likes.indexOf(userId), 1)
+        await comment.save()
+        return res.status(200).json({message:"Comment unliked successfully"})
+    }else{
+        comment.likes.push(userId);
+        await comment.save()
+        return res.status(200).json({message:"Comment liked successfully"})
+    }
 
-    await comment.save();
-
-    return res.status(200).json(comment);
   } catch (error) {
     console.log(`Error in upvoteDownvotePost: ${error}`);
     res.status(400).json({ message: "Internal server error please try again" });
@@ -160,9 +168,14 @@ export const likeComments = async (req, res) => {
 
 export const getLikedPosts = async (req, res) => {
   try {
-    const { userId } = req.params;
+    let { userId } = req.params;
+    userId = userId.trim()
+    
     const user = await User.findById(userId).select("-password");
+    
     if (!user) return res.status(404).json({ message: "Error user not found" });
+
+    if(user.likedPost.length===0) return res.status(200).json([])
 
     const likedPost = await Post.find({ _id: { $in: user.likedPost } })
       .populate({
@@ -189,9 +202,8 @@ export const getLikedPosts = async (req, res) => {
 export const getFollowingPosts = async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId)
-      .select("-password")
-      .select("-password");
+    const user = await User.findById(userId).select("-password")
+      
     if (!user)
       return res.status(404).json({ message: "Error 404 user not found " });
 
@@ -200,13 +212,13 @@ export const getFollowingPosts = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate({
         path: "user",
-        select: "-password",
+        select: "-password -email",
       })
       .populate({
-        path: "comment",
+        path: "comments",
         populate: {
           path: "user",
-          select: "-password",
+          select: "-password -email",
         },
       });
 
@@ -222,7 +234,7 @@ export const getAllPosts = async (req, res) => {
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .populate({
-        path: "User",
+        path: "user",
         select: "-password -email",
       })
       .populate({

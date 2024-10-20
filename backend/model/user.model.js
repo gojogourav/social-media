@@ -54,13 +54,15 @@ const userSchema = new mongoose.Schema({
         {
 
             type:mongoose.Schema.Types.ObjectId,
-            ref:"Post"
+            ref:"Post",
+            default:[]
         }
     ],
     community:[
         {
             type:mongoose.Schema.Types.ObjectId,
-            ref:"Community"
+            ref:"Community",
+            default:[]
         }
     ]
 },{timestamps:true})

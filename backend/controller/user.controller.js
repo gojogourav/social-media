@@ -31,8 +31,9 @@ export const followUnfollowHandler = async (req, res) => {
     if (!userToModify)
       return res.status(404).json({ message: "Error user not found 404!" });
 
-    if (id === req.user._id.toString())
-      return res.status(400).json({ message: "You cannot follow yourself" });
+    // temporarily allowing to follow yourself because i don't have energy to follow and post another account just to check if feed works 
+    // if (id === req.user._id.toString())
+    //   return res.status(400).json({ message: "You cannot follow yourself" });
 
     const isFollowing = currentUser.following.includes(id.toString());
 
