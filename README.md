@@ -1,4 +1,5 @@
 # Social Media App
+**Project is in hold for while i need to spend some time revising react and learning nextjs now**
 
 A full-stack social media application built using **Node.js**, **Express**, **MongoDB**, **Cloudinary**, and **React**. This app allows users to register, create posts, comment on posts, like posts and comments, and follow/unfollow other users. The app features real-time updates, image uploads via Cloudinary, and user authentication.
 
